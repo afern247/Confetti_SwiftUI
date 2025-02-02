@@ -128,12 +128,18 @@ public struct ConfettiCannon: View {
             firstAppear = true
         }
         .onChange(of: counter) { _, value in
-            if firstAppear {
-                for i in 0...confettiConfig.repetitions {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + confettiConfig.repetitionInterval * Double(i)) {
+            DispatchQueue.main.async { [firstAppear, confettiConfig] in
+                guard firstAppear else { return }
+                
+                let repetitions = confettiConfig.repetitions
+                let repetitionInterval = confettiConfig.repetitionInterval
+                
+                for i in 0...repetitions {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + repetitionInterval * Double(i)) {
                         animate.append(false)
-                        if value > 0 && value < animate.count {
-                            animate[value-1].toggle()
+                        // Check if the current value is still valid to prevent out-of-bounds
+                        if value > 0 && (value - 1) < animate.count {
+                            animate[value - 1].toggle()
                         }
                     }
                 }
