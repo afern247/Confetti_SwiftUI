@@ -47,6 +47,7 @@ public enum ConfettiType: CaseIterable, Hashable {
     }
 }
 
+@MainActor
 public struct ConfettiCannon: View {
     @Binding var counter: Int
     @StateObject private var confettiConfig: ConfettiConfig
@@ -128,15 +129,12 @@ public struct ConfettiCannon: View {
             firstAppear = true
         }
         .onChange(of: counter) { _, value in
-            DispatchQueue.main.async { [weak self, firstAppear, confettiConfig] in
-                guard let self = self, firstAppear else { return }
-                
-                let repetitions = confettiConfig.repetitions
-                let repetitionInterval = confettiConfig.repetitionInterval
-                
-                for i in 0...repetitions {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + repetitionInterval * Double(i)) { [weak self] in
-                        guard let self = self else { return }
+            guard firstAppear else { return }
+            
+            Task {
+                for i in 0...confettiConfig.repetitions {
+                    try? await Task.sleep(for: .seconds(confettiConfig.repetitionInterval * Double(i)))
+                    withAnimation {
                         animate.append(false)
                         // Check if the current value is still valid to prevent out-of-bounds
                         if value > 0 && (value - 1) < animate.count {
@@ -149,6 +147,7 @@ public struct ConfettiCannon: View {
     }
 }
 
+@MainActor
 struct ConfettiContainer: View {
     @Binding var finishedAnimationCounter: Int
     @StateObject var confettiConfig: ConfettiConfig
@@ -161,16 +160,20 @@ struct ConfettiContainer: View {
             }
         }
         .onAppear {
-            if firstAppear {
-                DispatchQueue.main.asyncAfter(deadline: .now() + confettiConfig.animationDuration) {
-                    self.finishedAnimationCounter += 1
+            guard firstAppear else { return }
+            firstAppear = false
+            
+            Task {
+                try? await Task.sleep(for: .seconds(confettiConfig.animationDuration))
+                withAnimation {
+                    finishedAnimationCounter += 1
                 }
-                firstAppear = false
             }
         }
     }
 }
 
+@MainActor
 struct ConfettiView: View {
     @State var location: CGPoint = CGPoint(x: 0, y: 0)
     @State var opacity: Double = 0.0
@@ -229,7 +232,8 @@ struct ConfettiView: View {
                     location.y = -distance * sin(deg2rad(randomAngle))
                 }
                 
-                DispatchQueue.main.asyncAfter(deadline: .now() + getDelayBeforeRainAnimation()) {
+                Task {
+                    try? await Task.sleep(for: .seconds(getDelayBeforeRainAnimation()))
                     withAnimation(Animation.timingCurve(0.12, 0, 0.39, 0, duration: confettiConfig.rainAnimationDuration)) {
                         location.y += confettiConfig.rainHeight
                         opacity = confettiConfig.fadesOut ? 0 : confettiConfig.opacity
