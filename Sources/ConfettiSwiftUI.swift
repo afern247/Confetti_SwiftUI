@@ -138,6 +138,7 @@ public struct ConfettiCannon: View {
                     DispatchQueue.main.asyncAfter(deadline: .now() + repetitionInterval * Double(i)) { [weak self] in
                         guard let self = self else { return }
                         animate.append(false)
+                        // Check if the current value is still valid to prevent out-of-bounds
                         if value > 0 && (value - 1) < animate.count {
                             animate[value - 1].toggle()
                         }
