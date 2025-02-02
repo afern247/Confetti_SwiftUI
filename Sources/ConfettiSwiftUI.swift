@@ -117,7 +117,7 @@ public struct ConfettiCannon: View {
     
     public var body: some View {
         ZStack {
-            ForEach(finishedAnimationCounter..<animate.count, id: \.self) { i in
+            ForEach(finishedAnimationCounter..<animate.count, id: \.self) { _ in
                 ConfettiContainer(
                     finishedAnimationCounter: $finishedAnimationCounter,
                     confettiConfig: confettiConfig
@@ -128,16 +128,16 @@ public struct ConfettiCannon: View {
             firstAppear = true
         }
         .onChange(of: counter) { _, value in
-            DispatchQueue.main.async { [firstAppear, confettiConfig] in
-                guard firstAppear else { return }
+            DispatchQueue.main.async { [weak self, firstAppear, confettiConfig] in
+                guard let self = self, firstAppear else { return }
                 
                 let repetitions = confettiConfig.repetitions
                 let repetitionInterval = confettiConfig.repetitionInterval
                 
                 for i in 0...repetitions {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + repetitionInterval * Double(i)) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + repetitionInterval * Double(i)) { [weak self] in
+                        guard let self = self else { return }
                         animate.append(false)
-                        // Check if the current value is still valid to prevent out-of-bounds
                         if value > 0 && (value - 1) < animate.count {
                             animate[value - 1].toggle()
                         }
